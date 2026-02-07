@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora IP con Operación AND</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            padding: 20px;
+        }
+        .contenedor {
+            max-width: 700px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+        }
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .resultado, .and {
+            margin-top: 20px;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        pre {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        p {
+            margin: 6px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="contenedor">
+    <h1>Calculadora de Direcciones IP</h1>
+
+    <label>Dirección IP:</label>
+    <input type="text" id="ip" placeholder="Ejemplo: 192.168.10.25">
+
+    <button onclick="calcular()">Calcular</button>
+
+    <div class="resultado" id="resultado"></div>
+
+    <div class="and" id="and"></div>
+</div>
+
+<script>
+function aBinario(num) {
+    return num.toString(2).padStart(8, "0");
+}
+
+function calcular() {
+    let ip = document.getElementById("ip").value;
+    let octetos = ip.split(".").map(Number);
+
+    if (octetos.length !== 4 || octetos.some(o => isNaN(o) || o < 0 || o > 255)) {
+        document.getElementById("resultado").innerHTML = "<p>IP no válida</p>";
+        document.getElementById("and").innerHTML = "";
+        return;
+    }
+
+    let primerOcteto = octetos[0];
+    let clase = "";
+    let prefijo = "";
+    let mascara = [];
+
+    if (primerOcteto >= 1 && primerOcteto <= 126) {
+        clase = "A";
+        prefijo = "/8";
+        mascara = [255, 0, 0, 0];
+    } else if (primerOcteto >= 128 && primerOcteto <= 191) {
+        clase = "B";
+        prefijo = "/16";
+        mascara = [255, 255, 0, 0];
+    } else if (primerOcteto >= 192 && primerOcteto <= 223) {
+        clase = "C";
+        prefijo = "/24";
+        mascara = [255, 255, 255, 0];
+    } else {
+        document.getElementById("resultado").innerHTML = "<p>Clase no válida</p>";
+        document.getElementById("and").innerHTML = "";
+        return;
+    }
+
+    let tipo = "Pública";
+    if (primerOcteto === 10 ||
+        (primerOcteto === 172 && octetos[1] >= 16 && octetos[1] <= 31) ||
+        (primerOcteto === 192 && octetos[1] === 168)) {
+        tipo = "Privada";
+    }
+
+    let red = octetos.map((o, i) => o & mascara[i]);
+    let broadcast = red.map((r, i) => r | (255 - mascara[i]));
+
+    document.getElementById("resultado").innerHTML = `
+        <p><b>Clase:</b> ${clase}</p>
+        <p><b>Prefijo:</b> ${prefijo}</p>
+        <p><b>Máscara:</b> ${mascara.join(".")}</p>
+        <p><b>Dirección de red:</b> ${red.join(".")}</p>
+        <p><b>Broadcast:</b> ${broadcast.join(".")}</p>
+        <p><b>Tipo de red:</b> ${tipo}</p>
+        <p><b>Operación AND (resultado):</b> ${red.join(".")}</p>
+    `;
+
+    document.getElementById("and").innerHTML = `
+        <h2>Operación AND</h2>
+        <p>La operación AND se realiza entre la dirección IP y la máscara de subred para obtener la dirección de red.</p>
+
+        <pre>
+IP:       ${octetos.join(".")}
+Máscara:  ${mascara.join(".")}
+-----------------------------
+AND:      ${red.join(".")}
+        </pre>
+
+        <pre>
+IP (binario):
+${octetos.map(aBinario).join(".")}
+
+Máscara (binario):
+${mascara.map(aBinario).join(".")}
+
+Resultado AND:
+${red.map(aBinario).join(".")}
+        </pre>
+    `;
+}
+</script>
+
+</body>
+</html>
